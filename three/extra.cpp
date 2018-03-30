@@ -93,7 +93,7 @@ int Alg1(const Mat im, int Fea[][5][25])
 {
 	int Em[10][5] = { 0 };
 	int Num[25] = { 0 };
-	int ddd;
+	int ddd=0;
 
 
 
