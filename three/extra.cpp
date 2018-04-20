@@ -124,7 +124,7 @@ int Alg1(const Mat im, int Fea[][5][25])
 			for (int k = 0;k < 25;k++)
 			{
 				ddd = Num[k] - Fea[i][j][k];
-				Em[i][j] += (ddd*ddd) / 25;
+				Em[i][j] += (ddd*ddd);
 			}
 			Em[i][j] = (int)sqrt(Em[i][j]);
 		}
@@ -205,7 +205,7 @@ int Alg2(const Mat im, int Fea[][5][25])
 	{
 			for (int k = 0;k < 25;k++)
 			{
-				Em[i]+= Dta[i][k]* Dta[i][k] / 25;
+				Em[i]+= Dta[i][k]* Dta[i][k];
 			}
 			Em[i] = (int)sqrt(Em[i]);
 	}
@@ -278,7 +278,7 @@ int Alg3(const Mat im, int Fea[][5][25])
 	{
 		for (int k = 0;k < 25;k++)
 		{
-			Em[i] += Dta[i][k] * Dta[i][k] / 25;
+			Em[i] += Dta[i][k] * Dta[i][k];
 		}
 		Em[i] = (int)sqrt(Em[i]);
 	}
@@ -334,7 +334,7 @@ int Alg4(const Mat im, int Fea[][5][25])
 			for (int k = 0;k < 25;k++)
 			{
 				ddd = Num[k] - Fea[i][j][k];
-				Em[i][j] += (ddd*ddd) / 25;
+				Em[i][j] += (ddd*ddd) ;
 			}
 			Em[i][j] = (int)sqrt(Em[i][j]);
 			eM[i] = Em[i][j]++;

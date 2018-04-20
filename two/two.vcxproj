@@ -95,6 +95,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -213,6 +214,11 @@
     <None Include="res\two.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\2BB.bmp" />
+    <Image Include="res\bitmap1.bmp" />
+    <Image Include="res\bitmap3.bmp" />
+    <Image Include="res\Nier-2b-.bmp" />
+    <Image Include="res\Nier-2b.bmp" />
     <Image Include="res\Toolbar.bmp" />
     <Image Include="res\Toolbar256.bmp" />
     <Image Include="res\two.ico" />
