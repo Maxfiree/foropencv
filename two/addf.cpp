@@ -510,46 +510,49 @@ Mat Gauss_Low_Paass_Filter(Mat src, int sigma)
 	tmp.copyTo(q2);
 
 
-	static const double pi = 3.1415926;
-	int xcenter = padded.cols/2;
-	int ycenter = padded.rows / 2;
-	double **gauss = new double *[padded.cols];
-	for (int i = 0;i<padded.cols;i++)
-		gauss[i] = new double[padded.rows];//为每行分配空间（每行中有col个元素） 
-	double x2, y2;
-	double org = (double)1 / 2 * pi * sigma;
-	for (int i = 0; i < padded.cols; i++)
-	{
-		x2 = pow(i - xcenter, 2);
-		for (int j = 0; j < padded.rows; j++)
-		{
-			y2 = pow(j - ycenter, 2);
-			double g = exp(-(x2 + y2) / (2 * sigma * sigma));
-			g /= 2 * pi * sigma;
-			gauss[i][j] = g/org;
-		}
-	}
+	//static const double pi = 3.1415926;
+	//int xcenter = padded.cols/2;
+	//int ycenter = padded.rows / 2;
+	//double **gauss = new double *[padded.cols];
+	//for (int i = 0;i<padded.cols;i++)
+	//	gauss[i] = new double[padded.rows];//为每行分配空间（每行中有col个元素） 
+	//double x2, y2;
+	//double org = (double)1 / 2 * pi * sigma;
+	//for (int i = 0; i < padded.cols; i++)
+	//{
+	//	x2 = pow(i - xcenter, 2);
+	//	for (int j = 0; j < padded.rows; j++)
+	//	{
+	//		y2 = pow(j - ycenter, 2);
+	//		double g = exp(-(x2 + y2) / (2 * sigma * sigma));
+	//		g /= 2 * pi * sigma;
+	//		gauss[i][j] = g/org;
+	//	}
+	//}
 
 
 	for (int y = 0; y < mag.rows; y++) {
 		float* data = mag.ptr<float>(y);
 		for (int x = 0; x < mag.cols; x++) {
+			double d = sqrt(pow((y - cy), 2) + pow((x - cx), 2));
+			double s2 = pow(d,2) / (2*pow(sigma,2));
+			double h = exp(-s2);
 
-			//if (h <= 0.01)
+			//if (h <= 0.607)
 			//{
 			//	data[2*x] = 0;
 			//	data[2*x+1] = 0;
 			//}
 			//else {
-			data[2 * x] *= gauss[x][y];
-			data[2 * x + 1] *= gauss[x][y];
+			data[2 * x] *= h;
+			data[2 * x + 1] *= h;
 			//}
 		}
 	}
 
-	for (int i = 0;i<padded.cols;i++)
-		delete gauss[i];
-	delete[] gauss;
+	//for (int i = 0;i<padded.cols;i++)
+	//	delete gauss[i];
+	//delete[] gauss;
 
 	split(mag, planes);//分离通道  
 	magnitude(planes[0], planes[1], planes[0]);//获取幅度图像，0通道为实数通道，1为虚数，因为二维傅立叶变换结果是复数  
