@@ -20,3 +20,8 @@ Mat Gamma_ma(const Mat M, double y);
 Mat ideal_Low_Pass_Filter(Mat src,int D0);
 Mat Butterworth_Low_Paass_Filter(Mat src, int D0, int n);
 Mat Gauss_Low_Paass_Filter(Mat src, int sigma);
+Mat GaussNoise(const Mat src, int sm);
+Mat RayleighNoise(const Mat src, int sm);
+Mat IndexNoise(const Mat src, double st);
+Mat GammaNoise(const Mat src, double aph, double lda);
+Mat UniformNoise(const Mat src, double a);

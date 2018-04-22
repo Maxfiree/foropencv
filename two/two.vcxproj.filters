@@ -74,16 +74,10 @@
     <Image Include="res\Toolbar256.bmp">
       <Filter>资源文件</Filter>
     </Image>
-    <Image Include="res\bitmap1.bmp">
-      <Filter>资源文件</Filter>
-    </Image>
     <Image Include="res\Nier-2b.bmp">
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="res\Nier-2b-.bmp">
-      <Filter>资源文件</Filter>
-    </Image>
-    <Image Include="res\bitmap3.bmp">
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="res\2BB.bmp">

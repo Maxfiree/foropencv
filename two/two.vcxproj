@@ -215,8 +215,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\2BB.bmp" />
-    <Image Include="res\bitmap1.bmp" />
-    <Image Include="res\bitmap3.bmp" />
     <Image Include="res\Nier-2b-.bmp" />
     <Image Include="res\Nier-2b.bmp" />
     <Image Include="res\Toolbar.bmp" />

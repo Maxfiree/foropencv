@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "dps.h"
+#include <random>
 
 //CS类型转CHAR
 char* StrToChar(CString str)
@@ -578,10 +579,154 @@ Mat Gauss_Low_Paass_Filter(Mat src, int sigma)
 /*********************************************************************
 *                         高斯噪声                  *
 *********************************************************************/
+double generateGaussianNoise(double mu, double sigma)
+{
+	static const double epsilon = std::numeric_limits<double>::min();
+	static const double two_pi = 2.0*3.14159265358979323846;
+	thread_local double z1;
+	thread_local bool generate;
+	generate = !generate;
 
-//Mat GaussNoise(const Mat src, int sm)
-//{
-//	Mat im = src.clone();
-//    
-//}
+	if (!generate)
+		return z1 * sigma + mu;
 
+	double u1, u2;
+	do
+	{
+		u1 = rand() * (1.0 / RAND_MAX);
+		u2 = rand() * (1.0 / RAND_MAX);
+	} while (u1 <= epsilon);
+
+	double z0;
+	z0 = sqrt(-2.0 * log(u1)) * cos(two_pi * u2);
+	z1 = sqrt(-2.0 * log(u1)) * sin(two_pi * u2);
+	return z0 * sigma + mu;
+}
+
+Mat GaussNoise(const Mat src, int sm)
+{
+	Mat im=src.clone();
+	for (int i = 0 ;i < im.rows;i++)
+	{
+		uchar* Data = im.ptr<uchar>(i);
+		for (int j = 0;j < im.cols;j++)
+		{
+			Data[j] = (uchar)generateGaussianNoise(Data[j], (double)sm);
+			if (Data[j] < 0)
+				Data[j] = 0;
+			if (Data[j] > 255)
+				Data[j] = 255;
+		}
+	}
+	return im;
+
+}
+
+/*********************************************************************
+*                         瑞利噪声                  *
+*********************************************************************/
+
+Mat RayleighNoise(const Mat src, int sm)
+{
+	Mat im = src.clone();
+	double u = 0;
+	srand(time(NULL));
+	for (int i = 0;i < im.rows;i++)
+	{
+		uchar* Data = im.ptr<uchar>(i);
+		for (int j = 0;j < im.cols;j++)
+		{
+			u = rand() * (1.0 / RAND_MAX);
+			u = sqrt(-2 * log(u));
+			u = sm * 0.655*u;
+			Data[j] += (uchar)u;
+			if (Data[j] < 0)
+				Data[j] = 0;
+			if (Data[j] > 255)
+				Data[j] = 255;
+		}
+	}
+	return im;
+
+}
+
+/*********************************************************************
+*                         指数分布噪声                  *
+*********************************************************************/
+
+Mat IndexNoise(const Mat src, double st)
+{
+	Mat im = src.clone();
+	double u = 0;
+	srand(time(NULL));
+	for (int i = 0;i < im.rows;i++)
+	{
+		uchar* Data = im.ptr<uchar>(i);
+		for (int j = 0;j < im.cols;j++)
+		{
+			u = rand() * (1.0 / RAND_MAX);
+			u = -log(1 - u) / st;
+			/*u = ((double)1/st) * u;*/
+			Data[j] = (uchar)Data[j]+u;
+			if (Data[j] < 0)
+				Data[j] = 0;
+			if (Data[j] > 255)
+				Data[j] = 255;
+		}
+	}
+	return im;
+
+}
+/*********************************************************************
+*                         伽马分布噪声                  *
+*********************************************************************/
+
+
+Mat GammaNoise(const Mat src, double aph,double lda)
+{
+	Mat im = src.clone();
+	double u = 0;
+	std::default_random_engine generator(time(NULL));
+	std::gamma_distribution<double> distribution(aph, lda);
+	for (int i = 0;i < im.rows;i++)
+	{
+		uchar* Data = im.ptr<uchar>(i);
+		for (int j = 0;j < im.cols;j++)
+		{
+			Data[j] = (uchar)Data[j] + (uchar)distribution(generator);
+			if (Data[j] < 0)
+				Data[j] = 0;
+			if (Data[j] > 255)
+				Data[j] = 255;
+		}
+	}
+	return im;
+
+}
+
+/*********************************************************************
+*                         均匀分布噪声                  *
+*********************************************************************/
+
+Mat UniformNoise(const Mat src, double a)
+{
+	Mat im = src.clone();
+	double u = 0;
+	srand(time(NULL));
+	for (int i = 0;i < im.rows;i++)
+	{
+		uchar* Data = im.ptr<uchar>(i);
+		for (int j = 0;j < im.cols;j++)
+		{
+			u = rand() * (1.0 / RAND_MAX);
+			u *= a;
+			Data[j] = (uchar)Data[j] + u;
+			if (Data[j] < 0)
+				Data[j] = 0;
+			if (Data[j] > 255)
+				Data[j] = 255;
+		}
+	}
+	return im;
+
+}
