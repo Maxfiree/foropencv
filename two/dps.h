@@ -10,7 +10,7 @@ using namespace cv;
 #define _dst2_ "C:\\Users\\Cashion\\Desktop\\something\\object2.jpg"    //生成图像路径2
 #define _dst3_ "C:\\Users\\Cashion\\Desktop\\something\\object3.jpg"    //生成图像路径3
 
-Mat addSaltNoise(const Mat srcImage, int n);   //椒盐化噪声函数声明
+Mat addSaltNoise(const Mat srcImage, int n,int m);   //椒盐化噪声函数声明
 Mat Hisg(const Mat M);
 Mat Eqlz(const Mat M, int Range[]);
 Mat Glvls(const Mat M,int Rang[], int Mark);
@@ -25,3 +25,9 @@ Mat RayleighNoise(const Mat src, int sm);
 Mat IndexNoise(const Mat src, double st);
 Mat GammaNoise(const Mat src, double aph, double lda);
 Mat UniformNoise(const Mat src, double a);
+Mat GeometricMeanFilter(const Mat src, int n);
+Mat HarmonicMeanFilter(const Mat src, int n);
+Mat iHarmonicMeanFilter(const Mat src, int n, int q);
+Mat OrderFilter(const Mat src, int n, int m);
+Mat AlphaFilter(const Mat src, int n, int d);
+Mat SelfAdaptedFilter(const Mat src, int n, double vari_n);

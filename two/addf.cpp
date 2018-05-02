@@ -15,42 +15,51 @@ char* StrToChar(CString str)
 /*********************************************************************
 *                           椒盐化噪声函数                           *
 *********************************************************************/
-Mat addSaltNoise(const Mat srcImage, int n)
+Mat addSaltNoise(const Mat srcImage, int n,int m)
 {
 	Mat dstImage = srcImage.clone();
 	srand(time(NULL));
-	for (int k = 0; k < n; k++)
+	if (m == 0 || m == 2)
 	{
-		//随机取值行列  
-		int i = rand() % dstImage.rows;
-		int j = rand() % dstImage.cols;
-		//图像通道判定  
-		if (dstImage.channels() == 1)
+
+		for (int k = 0; k < n; k++)
 		{
-			dstImage.at<uchar>(i, j) = 255;       //盐噪声  
-		}
-		else
-		{
-			dstImage.at<Vec3b>(i, j)[0] = 255;
-			dstImage.at<Vec3b>(i, j)[1] = 255;
-			dstImage.at<Vec3b>(i, j)[2] = 255;
+			//随机取值行列  
+			int i = rand() % dstImage.rows;
+			int j = rand() % dstImage.cols;
+			//图像通道判定  
+			if (dstImage.channels() == 1)
+			{
+				dstImage.at<uchar>(i, j) = 255;       //盐噪声  
+			}
+			else
+			{
+				dstImage.at<Vec3b>(i, j)[0] = 255;
+				dstImage.at<Vec3b>(i, j)[1] = 255;
+				dstImage.at<Vec3b>(i, j)[2] = 255;
+			}
 		}
 	}
-	for (int k = 0; k < n; k++)
+
+	if (m == 1 || m == 2)
 	{
-		//随机取值行列  
-		int i = rand() % dstImage.rows;
-		int j = rand() % dstImage.cols;
-		//图像通道判定  
-		if (dstImage.channels() == 1)
+
+		for (int k = 0; k < n; k++)
 		{
-			dstImage.at<uchar>(i, j) = 0;     //椒噪声  
-		}
-		else
-		{
-			dstImage.at<Vec3b>(i, j)[0] = 0;
-			dstImage.at<Vec3b>(i, j)[1] = 0;
-			dstImage.at<Vec3b>(i, j)[2] = 0;
+			//随机取值行列  
+			int i = rand() % dstImage.rows;
+			int j = rand() % dstImage.cols;
+			//图像通道判定  
+			if (dstImage.channels() == 1)
+			{
+				dstImage.at<uchar>(i, j) = 0;     //椒噪声  
+			}
+			else
+			{
+				dstImage.at<Vec3b>(i, j)[0] = 0;
+				dstImage.at<Vec3b>(i, j)[1] = 0;
+				dstImage.at<Vec3b>(i, j)[2] = 0;
+			}
 		}
 	}
 	return dstImage;
@@ -401,7 +410,6 @@ Mat Butterworth_Low_Paass_Filter(Mat src,int D0,int n)
 	int N = getOptimalDFTSize(img.cols);
 	Mat padded;
 	copyMakeBorder(img, padded, 0, M - img.rows, 0, N - img.cols, BORDER_CONSTANT, Scalar::all(0));
-
 	Mat planes[] = { Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F) };
 	Mat complexImg;
 	merge(planes, 2, complexImg);
@@ -729,4 +737,446 @@ Mat UniformNoise(const Mat src, double a)
 	}
 	return im;
 
+}
+
+/*********************************************************************
+*                         几何均值滤波                 *
+*********************************************************************/
+Mat GeometricMeanFilter(const Mat src, int n)
+{
+	Mat im(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	Mat dst(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	int x = (n - 1) / 2;
+	int y = (n - 1) / 2;
+	int Endx = im.cols -1- x;
+	int Endy = im.rows -1- y;
+	src.copyTo(im(Rect(x, y, src.cols, src.rows)));
+
+	Mat up1 = im(Rect(x+1, 0, src.cols, y));
+	Mat up0 = im(Rect(x+1, y+1, src.cols, y));
+	Mat down1 = im(Rect(x+1, Endy + 1, src.cols, y));
+	Mat down0 = im(Rect(x+1, Endy - y, src.cols, y));
+	Mat left1 = im(Rect(0, y + 1, x, src.rows));
+	Mat left0 = im(Rect(x + 1, y + 1, x, src.rows));
+	Mat right1 = im(Rect(Endx + 1, y + 1, x, src.rows));
+	Mat right0 = im(Rect(Endx - y, y + 1, x, src.rows));
+
+	Mat lu1 = im(Rect(0, 0, x, y));
+	Mat lu0 = im(Rect(x + 1, y + 1, x, y));
+	Mat ld1 = im(Rect(0, Endy + 1, x, y));
+	Mat ld0 = im(Rect(x + 1, Endy - y, x, y));
+	Mat ru1 = im(Rect(Endx + 1, 0, x, y));
+	Mat ru0 = im(Rect(Endx - x, y + 1, x, y));
+	Mat rd1 = im(Rect(Endx + 1, Endy + 1, x, y));
+	Mat rd0 = im(Rect(Endx - x, Endy - y, x, y));
+
+	flip(up0, up1, 0);
+	flip(down0, down1, 0);
+	flip(right0, right1, 1);
+	flip(left0, left1, 1);
+	flip(lu0, lu1, -1);
+	flip(ld0, ld1, -1);
+	flip(ru0, ru1, -1);
+	flip(rd0, rd1, -1);
+
+	for (int j = y;j < Endy + 1;j++)
+	{
+		uchar* data = dst.ptr<uchar>(j);
+		for (int i = x;i < Endx + 1;i++)
+		{
+
+
+			double product = 1;
+			for (int m = j - y;m < j + y+1;m++)
+			{
+				uchar* data2 = im.ptr<uchar>(m);
+				for (int n = i - x;n < i + x+1;n++)
+				{
+					if (data2[n]!= 0)
+					product *= data2[n];
+
+				}
+			}
+
+			data[i] = pow(product,1.0/(double)(n*n));
+
+
+
+		}
+	}
+	dst(Rect(x, y, src.cols, src.rows)).copyTo(dst);
+	return dst;
+}
+
+/*********************************************************************
+*                         谐波均值滤波                 *
+*********************************************************************/
+Mat HarmonicMeanFilter(const Mat src, int n)
+{
+	Mat im(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	Mat dst(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	int x = (n - 1) / 2;
+	int y = (n - 1) / 2;
+	int Endx = im.cols - 1 - x;
+	int Endy = im.rows - 1 - y;
+	src.copyTo(im(Rect(x, y, src.cols, src.rows)));
+
+	Mat up1 = im(Rect(x + 1, 0, src.cols, y));
+	Mat up0 = im(Rect(x + 1, y + 1, src.cols, y));
+	Mat down1 = im(Rect(x + 1, Endy + 1, src.cols, y));
+	Mat down0 = im(Rect(x + 1, Endy - y, src.cols, y));
+	Mat left1 = im(Rect(0, y + 1, x, src.rows));
+	Mat left0 = im(Rect(x + 1, y + 1, x, src.rows));
+	Mat right1 = im(Rect(Endx + 1, y + 1, x, src.rows));
+	Mat right0 = im(Rect(Endx - y, y + 1, x, src.rows));
+
+	Mat lu1 = im(Rect(0, 0, x, y));
+	Mat lu0 = im(Rect(x + 1, y + 1, x, y));
+	Mat ld1 = im(Rect(0, Endy + 1, x, y));
+	Mat ld0 = im(Rect(x + 1, Endy - y, x, y));
+	Mat ru1 = im(Rect(Endx + 1, 0, x, y));
+	Mat ru0 = im(Rect(Endx - x, y + 1, x, y));
+	Mat rd1 = im(Rect(Endx + 1, Endy + 1, x, y));
+	Mat rd0 = im(Rect(Endx - x, Endy - y, x, y));
+
+	flip(up0, up1, 0);
+	flip(down0, down1, 0);
+	flip(right0, right1, 1);
+	flip(left0, left1, 1);
+	flip(lu0, lu1, -1);
+	flip(ld0, ld1, -1);
+	flip(ru0, ru1, -1);
+	flip(rd0, rd1, -1);
+
+	for (int j = y;j < Endy + 1;j++)
+	{
+		uchar* data = dst.ptr<uchar>(j);
+		for (int i = x;i < Endx + 1;i++)
+		{
+
+
+			double sum = 0;
+			for (int m = j - y;m < j + y + 1;m++)
+			{
+				uchar* data2 = im.ptr<uchar>(m);
+				for (int n = i - x;n < i + x + 1;n++)
+				{
+					if (data2[n] != 0)
+						sum += 1.0/data2[n];
+
+				}
+			}
+
+			data[i] = n*n / sum;
+
+
+
+		}
+	}
+	dst(Rect(x, y, src.cols, src.rows)).copyTo(dst);
+	return dst;
+}
+
+/*********************************************************************
+*                         逆谐波均值滤波                 *
+*********************************************************************/
+Mat iHarmonicMeanFilter(const Mat src, int n,int q)
+{
+	Mat im(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	Mat dst(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	int x = (n - 1) / 2;
+	int y = (n - 1) / 2;
+	int Endx = im.cols - 1 - x;
+	int Endy = im.rows - 1 - y;
+	src.copyTo(im(Rect(x, y, src.cols, src.rows)));
+
+	Mat up1 = im(Rect(x + 1, 0, src.cols, y));
+	Mat up0 = im(Rect(x + 1, y + 1, src.cols, y));
+	Mat down1 = im(Rect(x + 1, Endy + 1, src.cols, y));
+	Mat down0 = im(Rect(x + 1, Endy - y, src.cols, y));
+	Mat left1 = im(Rect(0, y + 1, x, src.rows));
+	Mat left0 = im(Rect(x + 1, y + 1, x, src.rows));
+	Mat right1 = im(Rect(Endx + 1, y + 1, x, src.rows));
+	Mat right0 = im(Rect(Endx - y, y + 1, x, src.rows));
+
+	Mat lu1 = im(Rect(0, 0, x, y));
+	Mat lu0 = im(Rect(x + 1, y + 1, x, y));
+	Mat ld1 = im(Rect(0, Endy + 1, x, y));
+	Mat ld0 = im(Rect(x + 1, Endy - y, x, y));
+	Mat ru1 = im(Rect(Endx + 1, 0, x, y));
+	Mat ru0 = im(Rect(Endx - x, y + 1, x, y));
+	Mat rd1 = im(Rect(Endx + 1, Endy + 1, x, y));
+	Mat rd0 = im(Rect(Endx - x, Endy - y, x, y));
+
+	flip(up0, up1, 0);
+	flip(down0, down1, 0);
+	flip(right0, right1, 1);
+	flip(left0, left1, 1);
+	flip(lu0, lu1, -1);
+	flip(ld0, ld1, -1);
+	flip(ru0, ru1, -1);
+	flip(rd0, rd1, -1);
+
+	for (int j = y;j < Endy + 1;j++)
+	{
+		uchar* data = dst.ptr<uchar>(j);
+		for (int i = x;i < Endx + 1;i++)
+		{
+
+
+			double sum_n = 0;
+			double sum_d = 0;
+			for (int m = j - y;m < j + y + 1;m++)
+			{
+				uchar* data2 = im.ptr<uchar>(m);
+				for (int n = i - x;n < i + x + 1;n++)
+				{
+					sum_n += pow(data2[n],q+1);
+					sum_d += pow(data2[n], q);
+				}
+			}
+
+			data[i] = sum_n / sum_d;
+
+		}
+	}
+	dst(Rect(x, y, src.cols, src.rows)).copyTo(dst);
+	return dst;
+}
+
+/*********************************************************************
+*                         排序滤波器                 *
+*********************************************************************/
+Mat OrderFilter(const Mat src, int n, int m)
+{
+	Mat im(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	Mat dst(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	int x = (n - 1) / 2;
+	int y = (n - 1) / 2;
+	int Endx = im.cols - 1 - x;
+	int Endy = im.rows - 1 - y;
+	src.copyTo(im(Rect(x, y, src.cols, src.rows)));
+
+	Mat up1 = im(Rect(x + 1, 0, src.cols, y));
+	Mat up0 = im(Rect(x + 1, y + 1, src.cols, y));
+	Mat down1 = im(Rect(x + 1, Endy + 1, src.cols, y));
+	Mat down0 = im(Rect(x + 1, Endy - y, src.cols, y));
+	Mat left1 = im(Rect(0, y + 1, x, src.rows));
+	Mat left0 = im(Rect(x + 1, y + 1, x, src.rows));
+	Mat right1 = im(Rect(Endx + 1, y + 1, x, src.rows));
+	Mat right0 = im(Rect(Endx - y, y + 1, x, src.rows));
+
+	Mat lu1 = im(Rect(0, 0, x, y));
+	Mat lu0 = im(Rect(x + 1, y + 1, x, y));
+	Mat ld1 = im(Rect(0, Endy + 1, x, y));
+	Mat ld0 = im(Rect(x + 1, Endy - y, x, y));
+	Mat ru1 = im(Rect(Endx + 1, 0, x, y));
+	Mat ru0 = im(Rect(Endx - x, y + 1, x, y));
+	Mat rd1 = im(Rect(Endx + 1, Endy + 1, x, y));
+	Mat rd0 = im(Rect(Endx - x, Endy - y, x, y));
+
+	flip(up0, up1, 0);
+	flip(down0, down1, 0);
+	flip(right0, right1, 1);
+	flip(left0, left1, 1);
+	flip(lu0, lu1, -1);
+	flip(ld0, ld1, -1);
+	flip(ru0, ru1, -1);
+	flip(rd0, rd1, -1);
+	
+	for (int j = y;j < Endy + 1;j++)
+	{
+		uchar* data = dst.ptr<uchar>(j);
+		for (int i = x;i < Endx + 1;i++)
+		{
+
+
+			double sum_n = 0;
+			double sum_d = 0;
+			int Max  = im.ptr<uchar>(j - y)[i - x];
+			int Min = Max;
+			for (int m = j - y;m < j + y + 1;m++)
+			{
+				uchar* data2 = im.ptr<uchar>(m);
+				for (int n = i - x;n < i + x + 1;n++)
+				{
+					if (data2[n] > Max)
+						Max = data2[n];
+					if (data2[n] < Min)
+						Min = data2[n];
+
+				}
+			}
+			switch (m)
+			{
+			case 0:data[i] = Min;break;
+			case 1:data[i] = (Max + Min) / 2;break;
+			case 2:data[i] = Max;break;
+			}
+
+
+		}
+	}
+	dst(Rect(x, y, src.cols, src.rows)).copyTo(dst);
+	return dst;
+}
+
+/*********************************************************************
+*                         修正的阿尔法滤波器                 *
+*********************************************************************/
+Mat AlphaFilter(const Mat src, int n, int d)
+{
+	Mat im(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	Mat dst(src.rows + n - 1, src.cols + n - 1, CV_8UC1, Scalar::all(0));
+	int x = (n - 1) / 2;
+	int y = (n - 1) / 2;
+	int Endx = im.cols - 1 - x;
+	int Endy = im.rows - 1 - y;
+	src.copyTo(im(Rect(x, y, src.cols, src.rows)));
+
+	Mat up1 = im(Rect(x + 1, 0, src.cols, y));
+	Mat up0 = im(Rect(x + 1, y + 1, src.cols, y));
+	Mat down1 = im(Rect(x + 1, Endy + 1, src.cols, y));
+	Mat down0 = im(Rect(x + 1, Endy - y, src.cols, y));
+	Mat left1 = im(Rect(0, y + 1, x, src.rows));
+	Mat left0 = im(Rect(x + 1, y + 1, x, src.rows));
+	Mat right1 = im(Rect(Endx + 1, y + 1, x, src.rows));
+	Mat right0 = im(Rect(Endx - y, y + 1, x, src.rows));
+
+	Mat lu1 = im(Rect(0, 0, x, y));
+	Mat lu0 = im(Rect(x + 1, y + 1, x, y));
+	Mat ld1 = im(Rect(0, Endy + 1, x, y));
+	Mat ld0 = im(Rect(x + 1, Endy - y, x, y));
+	Mat ru1 = im(Rect(Endx + 1, 0, x, y));
+	Mat ru0 = im(Rect(Endx - x, y + 1, x, y));
+	Mat rd1 = im(Rect(Endx + 1, Endy + 1, x, y));
+	Mat rd0 = im(Rect(Endx - x, Endy - y, x, y));
+
+	flip(up0, up1, 0);
+	flip(down0, down1, 0);
+	flip(right0, right1, 1);
+	flip(left0, left1, 1);
+	flip(lu0, lu1, -1);
+	flip(ld0, ld1, -1);
+	flip(ru0, ru1, -1);
+	flip(rd0, rd1, -1);
+
+	uchar* order = new uchar[n*n];
+	for (int j = y;j < Endy + 1;j++)
+	{
+		uchar* data = dst.ptr<uchar>(j);
+		for (int i = x;i < Endx + 1;i++)
+		{
+
+
+			double sum = 0;
+			int temp = 0;
+			order[0] = im.ptr<uchar>(j - y)[i - x];
+			int c = 0;
+			for (int m = j - y;m < j + y + 1;m++)
+			{
+				uchar* data2 = im.ptr<uchar>(m);
+				for (int n = i - x;n < i + x + 1;n++)
+				{
+					
+					order[c++] = data2[n];
+					sum += data2[n];
+				}
+			}
+			
+			for (int a = 0;a < c-1;a++)
+			{
+				int flag = 1;
+				int n = a;
+				while (order[n] < order[n + 1])
+				{
+					temp = order[n];
+					order[n] = order[n+1];
+					order[n + 1] = temp;
+					n--;
+					if (n < 0)
+					n = 0;
+				}
+			}
+			
+			for (int a = 0;a < (d / 2);a++)
+			{
+				sum -= order[a];
+				sum -= order[c - 1 - a];
+			}
+
+			data[i] = sum / (n*n - d);
+
+
+
+		}
+	}
+	delete order;
+
+	dst(Rect(x, y, src.cols, src.rows)).copyTo(dst);
+	return dst;
+}
+
+/*********************************************************************
+*                        自适应滤波                 *
+*********************************************************************/
+Mat SelfAdaptedFilter(const Mat src, int n,double vari_n)
+{
+	Mat im = src.clone();
+	int M = im.rows%n;
+	int N = im.cols%n;
+	if (M != 0)M = n - M;
+	if (N != 0)N = n - N;
+	copyMakeBorder(im, im, 0, M , 0, N , BORDER_DEFAULT);
+
+
+	uchar* num = new uchar[n*n];
+	for (int j = 0;j <im.rows/n;j++)
+	{
+		for (int i = 0;i <im.cols/n ;i++)
+		{
+
+
+			double sum = 0;
+			double sum_v = 0;
+			int aver = 0;
+			double vari_l = 0;
+			int c = 0;
+			for (int m = j*n;m < j*n+n;m++)
+			{
+				uchar* data = im.ptr<uchar>(m);
+				for (int t = i*n;t < i*n+n;t++)
+				{
+					sum += data[t];
+					num[c++] = data[t];
+				}
+			}
+
+			aver = sum / c;
+			for (int a = 0;a < c;a++)
+			{
+				sum_v += pow(num[a] - aver, 2);
+			}
+			vari_l = sum_v / c;
+
+			double h = vari_n / vari_l;
+			if (vari_n > vari_l)
+				h = 1;
+			for (int m = j * n;m < j*n + n;m++)
+			{
+				uchar* data = im.ptr<uchar>(m);
+				for (int t = i * n;t < i*n + n;t++)
+				{
+					data[t] = data[t] - h * (data[t] - aver);
+				}
+			}
+
+
+
+
+		}
+	}
+	im(Rect(0, 0, src.cols, src.rows)).copyTo(im);
+	delete num;
+	return im;
 }
